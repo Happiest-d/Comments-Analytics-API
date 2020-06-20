@@ -29,8 +29,9 @@ app.post('/api/comments', (req, res) => {
         });
     })
 
-    const getAuthor = new Promise ((resolve, reject) => {
+    const getData = new Promise ((resolve, reject) => {
         getCooments.then(comments => {
+            //Поиск автора максимального кол-ва комментариев
             let uniqMail = [];
             //специально добавляю комментарий с существущим автором
             comments.push({
@@ -42,7 +43,7 @@ app.post('/api/comments', (req, res) => {
                   'dolor quam autem quasi\n' +
                   'reiciendis et nam sapiente accusantium'
               })
-            //-----------------------------------------------------
+            //
             for (let j = 0; j < comments.length; j++) {
                 let isEmail = false;
                 for (let i = 0; i < uniqMail.length; i++) {
@@ -65,27 +66,80 @@ app.post('/api/comments', (req, res) => {
                 }
                     
             }
-            console.log(elemNum);
-            console.log(uniqMail[elemNum]);
-            resolve()
+            //console.log(elemNum);
+            //console.log(uniqMail[elemNum]);
+
+            //--------------------------------------------------------
+            //Поиск 5 наиболее частых слов
+
+            let uniqWords = [];
+            let mostUsed = [];
+
+            for (let j = 1; j < comments.length; j++) {
+                let allWords = [];
+                let bufferString = comments[j].body;
+                //console.log(bufferString);
+                let sep1 = bufferString.split('\n');
+                //console.log(sep1);
+                for (let i = 0; i < sep1.length; i++) {
+                    let arr = sep1[i].split(' ');
+                    for (let n = 0; n < arr.length; n++) {
+                        allWords.push(arr[n])
+                    }
+                }
+                //console.log(allWords);
+
+                for (let i = 0; i < allWords.length; i++){
+                    let isWord = false;
+                    for (let n = 0; n < uniqWords.length; n++) {
+                        if (allWords[i] == uniqWords[n].word) {
+                            isWord = true;
+                            uniqWords[n].counter++
+                            break;
+                        }
+                    }
+                    if (isWord == false) {uniqWords.push({word: allWords[i], counter: 1})}
+                }
+            }
+
+            for (let i = 0, endI = uniqWords.length - 1; i < endI; i++) {
+                for (var j = 0, endJ = endI - i; j < endJ; j++) {
+                    if (uniqWords[j].counter < uniqWords[j + 1].counter) {
+                        let swap = uniqWords[j].counter;
+                        uniqWords[j].counter = uniqWords[j+1].counter;
+                        uniqWords[j+1].counter = swap;
+                    }
+                }
+            }
+            
+            for (let i = 0; i < 5; i++){
+                mostUsed.push(uniqWords[i])
+            }
+
+
+            //------------------------------------------------------
+            //console.log(uniqWords);
+            //console.log(mostUsed);
+            const data = {
+                author: uniqMail[elemNum],
+                words: mostUsed
+            };
+            resolve(data)
         })
     })
 
-    getAuthor.then(() => {
-        getCooments.then(comments => {
-            console.log(comments.length);
-            console.log(comments[0]);
+    getData.then(data => {
             const end = new Date().getTime();
-            const timeUdate = new Promise((resolve, reject) => {
-                timeFind(start, end);
-                resolve();
-            })
-            timeUdate.then(() => {
-                const reqJson = JSON.stringify(reqTime);
-                res.send(reqJson);
-                console.log(reqJson);
-            })
-        })
+            timeFind(start, end);
+            console.log(data);
+            const reqData = {
+                author: data.author,
+                words: data.words,
+                time: reqTime
+            }
+            const reqJson = JSON.stringify(reqData);
+            res.send(reqJson);
+            console.log(reqJson);
     })
 
     let timeFind = (start, end) => {
