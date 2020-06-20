@@ -29,20 +29,64 @@ app.post('/api/comments', (req, res) => {
         });
     })
 
-    getCooments.then(comments => {
-        console.log(comments.length);
-        console.log(comments[0]);
-        const end = new Date().getTime();
-        const timeUdate = new Promise((resolve, reject) => {
-            timeFind(start, end);
-            resolve();
+    const getAuthor = new Promise ((resolve, reject) => {
+        getCooments.then(comments => {
+            let uniqMail = [];
+            //специально добавляю комментарий с существущим автором
+            comments.push({
+                postId: 32,
+                name: 'id labore ex et quam laborum',
+                email: comments[400].email,
+                body: 'laudantium enim quasi est quidem magnam voluptate ipsam eos\n' +
+                  'tempora quo necessitatibus\n' +
+                  'dolor quam autem quasi\n' +
+                  'reiciendis et nam sapiente accusantium'
+              })
+            //-----------------------------------------------------
+            for (let j = 0; j < comments.length; j++) {
+                let isEmail = false;
+                for (let i = 0; i < uniqMail.length; i++) {
+                    if (comments[j].email == uniqMail[i].email) {
+                        isEmail = true;
+                        uniqMail[i].counter++;
+                        break;
+                    }
+                }    
+                if (isEmail == false) {uniqMail.push({email: comments[j].email, counter: 1})}
+            }
+            //проверика посика макс. элемента
+            //uniqMail[28].counter=3;
+            let maxNum = 0;
+            let elemNum = 0;
+            for (let i = 0; i < uniqMail.length; i++) {
+                if (uniqMail[i].counter > maxNum) {
+                    maxNum = uniqMail[i].counter;
+                    elemNum = i;
+                }
+                    
+            }
+            console.log(elemNum);
+            console.log(uniqMail[elemNum]);
+            resolve()
         })
-        timeUdate.then(() => {
-            const reqJson = JSON.stringify(reqTime);
-            res.send(reqJson);
-            console.log(reqJson);
+    })
+
+    getAuthor.then(() => {
+        getCooments.then(comments => {
+            console.log(comments.length);
+            console.log(comments[0]);
+            const end = new Date().getTime();
+            const timeUdate = new Promise((resolve, reject) => {
+                timeFind(start, end);
+                resolve();
+            })
+            timeUdate.then(() => {
+                const reqJson = JSON.stringify(reqTime);
+                res.send(reqJson);
+                console.log(reqJson);
+            })
         })
-    })  
+    })
 
     let timeFind = (start, end) => {
         reqTime.last = end - start;
@@ -56,8 +100,8 @@ app.post('/api/comments', (req, res) => {
             if (0 <= end - reqTime.allReqTime[i] && end - reqTime.allReqTime[i] <= 60000) reqTime.periodReq++
         }
     }
+})
 
-});
 
 app.listen(3000, () => {
     console.log('App listening on port 3000!');
