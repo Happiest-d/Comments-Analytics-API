@@ -33,17 +33,6 @@ app.post('/api/comments', (req, res) => {
         getCooments.then(comments => {
             //Поиск автора максимального кол-ва комментариев
             let uniqMail = [];
-            //специально добавляю комментарий с существущим автором
-            comments.push({
-                postId: 32,
-                name: 'id labore ex et quam laborum',
-                email: comments[400].email,
-                body: 'laudantium enim quasi est quidem magnam voluptate ipsam eos\n' +
-                  'tempora quo necessitatibus\n' +
-                  'dolor quam autem quasi\n' +
-                  'reiciendis et nam sapiente accusantium'
-              })
-            //
             for (let j = 0; j < comments.length; j++) {
                 let isEmail = false;
                 for (let i = 0; i < uniqMail.length; i++) {
@@ -55,7 +44,7 @@ app.post('/api/comments', (req, res) => {
                 }    
                 if (isEmail == false) {uniqMail.push({email: comments[j].email, counter: 1})}
             }
-            //проверика посика макс. элемента
+            //выбор автора с макс. числом комментариев
             //uniqMail[28].counter=3;
             let maxNum = 0;
             let elemNum = 0;
@@ -74,8 +63,9 @@ app.post('/api/comments', (req, res) => {
 
             let uniqWords = [];
             let mostUsed = [];
-
+            
             for (let j = 1; j < comments.length; j++) {
+                //преобразование body в массив слов
                 let allWords = [];
                 let bufferString = comments[j].body;
                 //console.log(bufferString);
@@ -88,7 +78,7 @@ app.post('/api/comments', (req, res) => {
                     }
                 }
                 //console.log(allWords);
-
+                //подсчёт количесва слов и добавлении ранее не встречавшихся
                 for (let i = 0; i < allWords.length; i++){
                     let isWord = false;
                     for (let n = 0; n < uniqWords.length; n++) {
@@ -101,7 +91,7 @@ app.post('/api/comments', (req, res) => {
                     if (isWord == false) {uniqWords.push({word: allWords[i], counter: 1})}
                 }
             }
-
+            //сортировка по убыванию массива уникальных слов
             for (let i = 0, endI = uniqWords.length - 1; i < endI; i++) {
                 for (var j = 0, endJ = endI - i; j < endJ; j++) {
                     if (uniqWords[j].counter < uniqWords[j + 1].counter) {
@@ -111,7 +101,7 @@ app.post('/api/comments', (req, res) => {
                     }
                 }
             }
-            
+            //выбор 5 наиболее используемых слов
             for (let i = 0; i < 5; i++){
                 mostUsed.push(uniqWords[i])
             }
