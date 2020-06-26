@@ -35,10 +35,10 @@ app.post('/api/comments', (req, res) => {
         return new Promise ((resolve, reject) => {
             //Поиск автора максимального кол-ва комментариев
             let uniqMail = [];
-            for (let j = 0; j < comments.length; j++){
-                let email = [comments[j].email];
+            comments.forEach(comment => {
+                const email = [comment.email];
                 findAllUniq(email, uniqMail)
-            } 
+            }) 
             //выбор автора с макс. числом комментариев
             uniqMail.sort(sortDescending);
             
@@ -53,23 +53,16 @@ app.post('/api/comments', (req, res) => {
         return new Promise ((resolve, reject) => {
             //Поиск 5 наиболее частых слов
 
-            let comments = data.com;
+            const comments = data.com;
             let uniqWords = [];
             let mostUsed = [];
             
-            for (let j = 1; j < comments.length; j++) {
-                //преобразование body в массив слов
+            //преобразование в массив слов и подсчёт слов
+            comments.forEach(comment => {
                 let allWords = [];
-                let bufferString = comments[j].body;
-                //console.log(bufferString);
-                let sep1 = bufferString.split('\n');
-                //console.log(sep1);
-                for (let i = 0; i < sep1.length; i++) {
-                    let arr = sep1[i].split(' ');
-                    allWords = allWords.concat(arr);
-                }
+                allWords = allWords.concat(findWords(comment.body));
                 findAllUniq(allWords,uniqWords);
-            }
+            })
 
             //сортировка по убыванию массива уникальных слов
             uniqWords.sort(sortDescending);
@@ -98,7 +91,7 @@ app.post('/api/comments', (req, res) => {
 
     
 
-    let timeFind = (start, end) => {
+    const timeFind = (start, end) => {
         reqTime.last = end - start;
         reqTime.sumTime += reqTime.last;
         reqTime.sumReq++;
@@ -111,29 +104,32 @@ app.post('/api/comments', (req, res) => {
         }
     }
 
-    let sortDescending = (a, b) => {
+    const sortDescending = (a, b) => {
         if (a.counter < b.counter) {
           return 1;
         }
         if (a.counter > b.counter) {
           return -1;
         }
-        // a должно быть равным b
         return 0;
     }
 
-    let findAllUniq = (arrIn, arrOut) => {
-        for (let i = 0; i < arrIn.length; i++){
-            let isWord = false;
-            for (let n = 0; n < arrOut.length; n++) {
-                if (arrIn[i] == arrOut[n].arg) {
-                    isWord = true;
-                    arrOut[n].counter++
-                    break;
-                }
+    const findAllUniq = (arrIn, arrOut) => {
+        arrIn.forEach(element => {
+            const wordIndex = arrOut.findIndex(uniqElement => element == uniqElement.arg)
+            if (wordIndex >= 0) {
+                arrOut[wordIndex].counter++
+            } else {
+                arrOut.push({arg: element, counter: 1})
             }
-            if (isWord == false) {arrOut.push({arg: arrIn[i], counter: 1})}
-        }
+        })
+    }
+
+    let findWords = (string) => {
+        const wordsFilter = /[^a-zA-Z_]/
+        const splitString = string.split(wordsFilter);
+        const words = splitString.filter(word => word != '' )
+        return words
     }
 
 })
