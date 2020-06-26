@@ -3,6 +3,7 @@ const prs = require('body-parser');
 const request = require('request');
 
 const app = express();
+
 let reqTime = {
     last: 0,
     sumTime: 0,
@@ -19,7 +20,7 @@ app.post('/api/comments', (req, res) => {
     //const dataInput = req.body;
     const link = 'https://jsonplaceholder.typicode.com/comments';
 
-    const getCooments = new Promise((resolve, reject) => {
+    const getComments = new Promise((resolve, reject) => {
         request(link, (error, response, body) => {
             console.error('error:', error); // Print the error if one occurred
             console.log('statusCode:', response && response.statusCode); // Print the response status code if a response was received
@@ -29,38 +30,30 @@ app.post('/api/comments', (req, res) => {
         });
     })
 
-    const getData = new Promise ((resolve, reject) => {
-        getCooments.then(comments => {
+    
+    getComments.then(comments => {
+        return new Promise ((resolve, reject) => {
             //Поиск автора максимального кол-ва комментариев
             let uniqMail = [];
-            for (let j = 0; j < comments.length; j++) {
-                let isEmail = false;
-                for (let i = 0; i < uniqMail.length; i++) {
-                    if (comments[j].email == uniqMail[i].email) {
-                        isEmail = true;
-                        uniqMail[i].counter++;
-                        break;
-                    }
-                }    
-                if (isEmail == false) {uniqMail.push({email: comments[j].email, counter: 1})}
-            }
+            for (let j = 0; j < comments.length; j++){
+                let email = [comments[j].email];
+                findAllUniq(email, uniqMail)
+            } 
             //выбор автора с макс. числом комментариев
-            //uniqMail[28].counter=3;
-            let maxNum = 0;
-            let elemNum = 0;
-            for (let i = 0; i < uniqMail.length; i++) {
-                if (uniqMail[i].counter > maxNum) {
-                    maxNum = uniqMail[i].counter;
-                    elemNum = i;
-                }
-                    
-            }
-            //console.log(elemNum);
-            //console.log(uniqMail[elemNum]);
-
-            //--------------------------------------------------------
+            uniqMail.sort(sortDescending);
+            
+            const authorComments = {
+                author: uniqMail[0],
+                com: comments
+            };
+            resolve(authorComments)
+        }) 
+    })
+    .then(data => {
+        return new Promise ((resolve, reject) => {
             //Поиск 5 наиболее частых слов
 
+            let comments = data.com;
             let uniqWords = [];
             let mostUsed = [];
             
@@ -73,64 +66,37 @@ app.post('/api/comments', (req, res) => {
                 //console.log(sep1);
                 for (let i = 0; i < sep1.length; i++) {
                     let arr = sep1[i].split(' ');
-                    for (let n = 0; n < arr.length; n++) {
-                        allWords.push(arr[n])
-                    }
+                    allWords = allWords.concat(arr);
                 }
-                //console.log(allWords);
-                //подсчёт количесва слов и добавлении ранее не встречавшихся
-                for (let i = 0; i < allWords.length; i++){
-                    let isWord = false;
-                    for (let n = 0; n < uniqWords.length; n++) {
-                        if (allWords[i] == uniqWords[n].word) {
-                            isWord = true;
-                            uniqWords[n].counter++
-                            break;
-                        }
-                    }
-                    if (isWord == false) {uniqWords.push({word: allWords[i], counter: 1})}
-                }
+                findAllUniq(allWords,uniqWords);
             }
+
             //сортировка по убыванию массива уникальных слов
-            for (let i = 0, endI = uniqWords.length - 1; i < endI; i++) {
-                for (var j = 0, endJ = endI - i; j < endJ; j++) {
-                    if (uniqWords[j].counter < uniqWords[j + 1].counter) {
-                        let swap = uniqWords[j].counter;
-                        uniqWords[j].counter = uniqWords[j+1].counter;
-                        uniqWords[j+1].counter = swap;
-                    }
-                }
-            }
+            uniqWords.sort(sortDescending);
+
             //выбор 5 наиболее используемых слов
-            for (let i = 0; i < 5; i++){
-                mostUsed.push(uniqWords[i])
-            }
+            mostUsed = uniqWords.slice(0,5);
 
-
-            //------------------------------------------------------
-            //console.log(uniqWords);
-            //console.log(mostUsed);
-            const data = {
-                author: uniqMail[elemNum],
+            const authorWords = {
+                author: data.author,
                 words: mostUsed
             };
-            resolve(data)
+            resolve(authorWords)
         })
     })
-
-    getData.then(data => {
-            const end = new Date().getTime();
-            timeFind(start, end);
-            console.log(data);
-            const reqData = {
-                author: data.author,
-                words: data.words,
-                time: reqTime
-            }
-            const reqJson = JSON.stringify(reqData);
-            res.send(reqJson);
-            console.log(reqJson);
+    .then(data => {
+        const end = new Date().getTime();
+        timeFind(start, end);
+        //console.log(data);
+        const resData = {
+            author: data.author,
+            words: data.words,
+            time: reqTime
+        }
+        res.json(resData);
     })
+
+    
 
     let timeFind = (start, end) => {
         reqTime.last = end - start;
@@ -144,6 +110,32 @@ app.post('/api/comments', (req, res) => {
             if (0 <= end - reqTime.allReqTime[i] && end - reqTime.allReqTime[i] <= 60000) reqTime.periodReq++
         }
     }
+
+    let sortDescending = (a, b) => {
+        if (a.counter < b.counter) {
+          return 1;
+        }
+        if (a.counter > b.counter) {
+          return -1;
+        }
+        // a должно быть равным b
+        return 0;
+    }
+
+    let findAllUniq = (arrIn, arrOut) => {
+        for (let i = 0; i < arrIn.length; i++){
+            let isWord = false;
+            for (let n = 0; n < arrOut.length; n++) {
+                if (arrIn[i] == arrOut[n].arg) {
+                    isWord = true;
+                    arrOut[n].counter++
+                    break;
+                }
+            }
+            if (isWord == false) {arrOut.push({arg: arrIn[i], counter: 1})}
+        }
+    }
+
 })
 
 
