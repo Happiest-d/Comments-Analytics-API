@@ -100,7 +100,7 @@ const findAllUniq = (arrIn) => {
     //     }
     // }, new Array())
 
-    return arrOut;
+    return arrOut
 }
 
 const findWords = (string) => {
