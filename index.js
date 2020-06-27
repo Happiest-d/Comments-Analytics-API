@@ -34,11 +34,11 @@ app.post('/api/comments', (req, res) => {
     getComments.then(comments => {
         return new Promise ((resolve, reject) => {
             //Поиск автора максимального кол-ва комментариев
-            let uniqMail = [];
+            let email = []
             comments.forEach(comment => {
-                const email = [comment.email];
-                findAllUniq(email, uniqMail)
-            }) 
+                email.push(comment.email);
+            })
+            const uniqMail = findAllUniq(email);
             //выбор автора с макс. числом комментариев
             uniqMail.sort(sortDescending);
             
@@ -52,18 +52,16 @@ app.post('/api/comments', (req, res) => {
     .then(data => {
         return new Promise ((resolve, reject) => {
             //Поиск 5 наиболее частых слов
-
             const comments = data.com;
-            let uniqWords = [];
             let mostUsed = [];
+            let allWords = []
             
             //преобразование в массив слов и подсчёт слов
             comments.forEach(comment => {
-                let allWords = [];
-                allWords = allWords.concat(findWords(comment.body));
-                findAllUniq(allWords,uniqWords);
+                const Words = findWords(comment.body);
+                Words.forEach(word => allWords.push(word))
             })
-
+            let uniqWords = findAllUniq(allWords);
             //сортировка по убыванию массива уникальных слов
             uniqWords.sort(sortDescending);
 
@@ -114,7 +112,8 @@ app.post('/api/comments', (req, res) => {
         return 0;
     }
 
-    const findAllUniq = (arrIn, arrOut) => {
+    const findAllUniq = (arrIn) => {
+        let arrOut = []
         arrIn.forEach(element => {
             const wordIndex = arrOut.findIndex(uniqElement => element == uniqElement.arg)
             if (wordIndex >= 0) {
@@ -123,6 +122,7 @@ app.post('/api/comments', (req, res) => {
                 arrOut.push({arg: element, counter: 1})
             }
         })
+        return arrOut;
     }
 
     let findWords = (string) => {
