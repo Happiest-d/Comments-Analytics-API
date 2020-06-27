@@ -32,56 +32,32 @@ app.post('/api/comments', (req, res) => {
 
     
     getComments.then(comments => {
-        return new Promise ((resolve, reject) => {
-            //Поиск автора максимального кол-ва комментариев
-            let email = []
-            comments.forEach(comment => {
-                email.push(comment.email);
-            })
-            const uniqMail = findAllUniq(email);
-            //выбор автора с макс. числом комментариев
-            uniqMail.sort(sortDescending);
-            
-            const authorComments = {
-                author: uniqMail[0],
-                com: comments
-            };
-            resolve(authorComments)
-        }) 
-    })
-    .then(data => {
-        return new Promise ((resolve, reject) => {
-            //Поиск 5 наиболее частых слов
-            const comments = data.com;
-            let mostUsed = [];
-            let allWords = []
-            
-            //преобразование в массив слов и подсчёт слов
-            comments.forEach(comment => {
-                const Words = findWords(comment.body);
-                Words.forEach(word => allWords.push(word))
-            })
-            let uniqWords = findAllUniq(allWords);
-            //сортировка по убыванию массива уникальных слов
-            uniqWords.sort(sortDescending);
-
-            //выбор 5 наиболее используемых слов
-            mostUsed = uniqWords.slice(0,5);
-
-            const authorWords = {
-                author: data.author,
-                words: mostUsed
-            };
-            resolve(authorWords)
+        //Поиск автора максимального кол-ва комментариев
+        let email = []
+        comments.forEach(comment => {
+            email.push(comment.email);
         })
-    })
-    .then(data => {
+        const uniqMail = findAllUniq(email);
+        uniqMail.sort(sortDescending);
+        
+
+        //Поиск 5 наиболее частых слов
+        let allWords = []
+        comments.forEach(comment => {
+            const Words = findWords(comment.body);
+            Words.forEach(word => allWords.push(word))
+        })
+        let uniqWords = findAllUniq(allWords);
+        uniqWords.sort(sortDescending);
+
+
+        //вывод результата
         const end = new Date().getTime();
         timeFind(start, end);
         //console.log(data);
         const resData = {
-            author: data.author,
-            words: data.words,
+            author: uniqMail[0],
+            words: uniqWords.slice(0,5),
             time: reqTime
         }
         res.json(resData);
