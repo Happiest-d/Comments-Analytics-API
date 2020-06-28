@@ -1,9 +1,8 @@
 const express = require('express');
-const bodyParser = require('body-parser');
 const fetch = require('node-fetch');
 
 const app = express();
-const link = 'https://jsonplaceholder.typicode.com/comments';
+const COMMENTS_URL = 'https://jsonplaceholder.typicode.com/comments';
 const reqTime = {
     last: 0,
     sumTime: 0,
@@ -13,12 +12,9 @@ const reqTime = {
     periodReq: 0
 };
 
-app.use(bodyParser.json());
-
 app.post('/api/comments', async(req, res) => {
-    //const dataInput = req.body;
     const startTime = new Date().getTime();
-    const response = await fetch(link);
+    const response = await fetch(COMMENTS_URL);
     const comments = await response.json();
 
     //Search for the author of the maximum number of comments
@@ -75,7 +71,7 @@ const findWords = (string) => {
     const wordsFilter = /[^a-zA-Z_']/;
     const splitString = string.split(wordsFilter);
     const wordsArray = splitString.filter(word => word !== '');
-    const wordsLowerCase = wordsArray.map(word => word.toLowerCase()).flat();
+    const wordsLowerCase = wordsArray.map(word => word.toLowerCase());
 
     return wordsLowerCase;
 };
