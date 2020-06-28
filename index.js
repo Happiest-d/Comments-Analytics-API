@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const fetch = require('node-fetch');
 
 const app = express();
-
+const link = 'https://jsonplaceholder.typicode.com/comments';
 const reqTime = {
     last: 0,
     sumTime: 0,
@@ -19,30 +19,24 @@ app.use(bodyParser.json());
 app.post('/api/comments', async(req, res) => {
     //const dataInput = req.body;
     const startTime = new Date().getTime();
-    const link = 'https://jsonplaceholder.typicode.com/comments';
     const response = await fetch(link);
     const comments = await response.json();
 
-    //Поиск автора максимального кол-ва комментариев
-    const emailArray = comments.map(comment => comment.email);
-    const uniqMail = findAllUniq(emailArray).sort(sortDescending);
+    //Search for the author of the maximum number of comments
+    const emails = comments.map(comment => comment.email);
+    const uniqMails = findAllUniq(emails).sort((a, b) => b.counter - a.counter);
     
 
-    //Поиск 5 наиболее частых слов
-    let allWords = [];
-    comments.forEach(comment => {
-        const words = findWords(comment.body);
-        words.forEach(word => allWords.push(word));
-    });
-    let uniqWords = findAllUniq(allWords).sort(sortDescending);
+    //Search for the most used words
+    const allWords = comments.map(comment => findWords(comment.body)).flat()
+    const uniqWords = findAllUniq(allWords).sort((a, b) => b.counter - a.counter);
 
 
-    //вывод результата
+    //result output
     const endTime = new Date().getTime();
     timeFind(startTime, endTime);
-    //console.log(data);
     const resData = {
-        author: uniqMail[0],
+        author: uniqMails[0],
         words: uniqWords.slice(0,5),
         time: reqTime
     };
@@ -57,52 +51,34 @@ const timeFind = (start, end) => {
     reqTime.sumReq++;
     reqTime.avgTime = reqTime.sumTime / reqTime.sumReq;
     reqTime.allReqTime[reqTime.sumReq - 1] = end;
-    //кол-во запросов за поледнюю минуту
     reqTime.periodReq = 0;
     for (let i = 0; i < (reqTime.sumReq); i++) {
         if (0 <= end - reqTime.allReqTime[i] && end - reqTime.allReqTime[i] <= 60000) reqTime.periodReq++;
     }
 };
 
-const sortDescending = (a, b) => {
-    if (a.counter < b.counter) {
-      return 1;
-    }
-    if (a.counter > b.counter) {
-      return -1;
-    }
-    return 0;
-};
 
-const findAllUniq = (inputArray) => {
-    let arrOut = [];
-    inputArray.forEach(element => {
-        const wordIndex = arrOut.findIndex(uniqElement => element === uniqElement.arg);
+const findAllUniq = (arrayInput) => {
+    const arrayOutput = arrayInput.reduce((uniqArgs, input) => {
+        const wordIndex = uniqArgs.findIndex(uniqElement => input === uniqElement.arg);
         if (wordIndex >= 0) {
-            arrOut[wordIndex].counter++;
+            uniqArgs[wordIndex].counter++;
         } else {
-            arrOut.push({arg: element, counter: 1});
+            uniqArgs.push( {arg: input, counter: 1} );
         }
-    });
+        return uniqArgs
+    }, [])
 
-    // let arrOut = arrIn.reduce((total, element) => {
-    //     const wordIndex = total.findIndex(uniqElement => element == uniqElement.arg)
-    //     if (wordIndex >= 0) {
-    //         total[wordIndex].counter++
-    //     } else {
-    //         total.push({arg: element, counter: 1})
-    //     }
-    // }, new Array())
-
-    return arrOut;
+    return arrayOutput;
 };
 
 const findWords = (string) => {
-    const wordsFilter = /[^a-zA-Z_]/;
+    const wordsFilter = /[^a-zA-Z_']/;
     const splitString = string.split(wordsFilter);
-    const words = splitString.filter(word => word !== '');
+    const wordsArray = splitString.filter(word => word !== '');
+    const wordsLowerCase = wordsArray.map(word => word.toLowerCase()).flat();
 
-    return words;
+    return wordsLowerCase;
 };
 
 
