@@ -1,9 +1,9 @@
 const express = require('express');
-const prs = require('body-parser');
-const request = require('request');
+const fetch = require('node-fetch');
 
 const app = express();
-let reqTime = {
+const COMMENTS_URL = 'https://jsonplaceholder.typicode.com/comments';
+const reqTime = {
     last: 0,
     sumTime: 0,
     sumReq: 0,
@@ -12,52 +12,70 @@ let reqTime = {
     periodReq: 0
 };
 
-app.use(prs.json());
+app.post('/api/comments', async(req, res) => {
+    const startTime = new Date().getTime();
+    const response = await fetch(COMMENTS_URL);
+    const comments = await response.json();
 
-app.post('/api/comments', (req, res) => {
-    const start = new Date().getTime();
-    //const dataInput = req.body;
-    const link = 'https://jsonplaceholder.typicode.com/comments';
+    //Search for the author of the maximum number of comments
+    const emails = comments.map(comment => comment.email);
+    const uniqMails = findAllUniq(emails).sort((a, b) => b.counter - a.counter);
+    
 
-    const getCooments = new Promise((resolve, reject) => {
-        request(link, (error, response, body) => {
-            console.error('error:', error); // Print the error if one occurred
-            console.log('statusCode:', response && response.statusCode); // Print the response status code if a response was received
-            //console.log('body:', body); 
-            const bodyArr = JSON.parse(body);
-            resolve(bodyArr);
-        });
-    })
+    //Search for the most used words
+    const allWords = comments.map(comment => findWords(comment.body)).flat()
+    const uniqWords = findAllUniq(allWords).sort((a, b) => b.counter - a.counter);
 
-    getCooments.then(comments => {
-        console.log(comments.length);
-        console.log(comments[0]);
-        const end = new Date().getTime();
-        const timeUdate = new Promise((resolve, reject) => {
-            timeFind(start, end);
-            resolve();
-        })
-        timeUdate.then(() => {
-            const reqJson = JSON.stringify(reqTime);
-            res.send(reqJson);
-            console.log(reqJson);
-        })
-    })  
 
-    let timeFind = (start, end) => {
-        reqTime.last = end - start;
-        reqTime.sumTime += reqTime.last;
-        reqTime.sumReq++;
-        reqTime.avgTime = reqTime.sumTime / reqTime.sumReq;
-        reqTime.allReqTime[reqTime.sumReq-1] = end;
-        //кол-во запросов за поледнюю минуту
-        reqTime.periodReq = 0;
-        for (let i = 0; i < (reqTime.sumReq); i++) {
-            if (0 <= end - reqTime.allReqTime[i] && end - reqTime.allReqTime[i] <= 60000) reqTime.periodReq++
-        }
-    }
+    //result output
+    const endTime = new Date().getTime();
+    timeFind(startTime, endTime);
+    const resData = {
+        author: uniqMails[0],
+        words: uniqWords.slice(0,5),
+        time: reqTime
+    };
 
+    res.json(resData);
 });
+
+
+const timeFind = (start, end) => {
+    reqTime.last = end - start;
+    reqTime.sumTime += reqTime.last;
+    reqTime.sumReq++;
+    reqTime.avgTime = reqTime.sumTime / reqTime.sumReq;
+    reqTime.allReqTime[reqTime.sumReq - 1] = end;
+    reqTime.periodReq = 0;
+    for (let i = 0; i < (reqTime.sumReq); i++) {
+        if (0 <= end - reqTime.allReqTime[i] && end - reqTime.allReqTime[i] <= 60000) reqTime.periodReq++;
+    }
+};
+
+
+const findAllUniq = (arrayInput) => {
+    const arrayOutput = arrayInput.reduce((uniqArgs, input) => {
+        const wordIndex = uniqArgs.findIndex(uniqElement => input === uniqElement.arg);
+        if (wordIndex >= 0) {
+            uniqArgs[wordIndex].counter++;
+        } else {
+            uniqArgs.push( {arg: input, counter: 1} );
+        }
+        return uniqArgs
+    }, [])
+
+    return arrayOutput;
+};
+
+const findWords = (string) => {
+    const wordsFilter = /[^a-zA-Z_']/;
+    const splitString = string.split(wordsFilter);
+    const wordsArray = splitString.filter(word => word !== '');
+    const wordsLowerCase = wordsArray.map(word => word.toLowerCase());
+
+    return wordsLowerCase;
+};
+
 
 app.listen(3000, () => {
     console.log('App listening on port 3000!');

@@ -22,8 +22,8 @@
   "homepage": "https://github.com/Happiest-d/Comments-Analytics-API#readme",
   "dependencies": {
     "express": "^4.17.1",
-    "prs": "^3.5.0",
-    "request": "^2.88.2"
+    "node-fetch": "^2.6.0",
+    "prs": "^3.5.0"
   },
   "devDependencies": {
     "eslint": "^7.3.0",
